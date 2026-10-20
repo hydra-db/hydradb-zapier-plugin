@@ -1,0 +1,13 @@
+{
+  "name": "hydradb-zapier",
+  "version": "0.1.0",
+  "description": "HydraDB Zapier integration: ingest knowledge and recall context.",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "zapier-platform-core": "^16.0.0"
+  }
+}

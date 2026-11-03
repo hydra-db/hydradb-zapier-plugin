@@ -21,14 +21,25 @@ const perform = async (z, bundle) => {
       mode: 'fast',
       max_results: bundle.inputData.maxResults || 6,
       graph_context: true,
+      ...(bundle.inputData.includeTableSql != null && { include_table_sql: bundle.inputData.includeTableSql }),
+      ...(bundle.inputData.tableLimit != null && bundle.inputData.tableLimit !== '' && { table_limit: bundle.inputData.tableLimit }),
     },
   });
-  const chunks = (response.data && response.data.data && response.data.data.chunks) || [];
-  return chunks.map((c, i) => ({
+  const data = response.data?.data || {};
+  const chunks = data.chunks || [];
+  const extras = {};
+  for (const key of ['tabular_data', 'temporal_facts', 'temporal_duration', 'temporal_filter']) {
+    if (data[key] != null) extras[key] = data[key];
+  }
+  if (response.data?.meta?.warnings?.length) extras.warnings = response.data.meta.warnings;
+  const rows = chunks.length ? chunks : (Object.keys(extras).length ? [{}] : []);
+  return rows.map((c, i) => ({
     id: c.chunk_uuid || c.id || String(i),
     text: extractText(c.chunk_content || c.text || ''),
     score: c.relevancy_score ?? c.score ?? null,
     title: c.source_title || c.title || '',
+    ...(c.chunk_metadata != null && { chunk_metadata: c.chunk_metadata }),
+    ...extras,
   }));
 };
 
@@ -50,6 +61,8 @@ module.exports = {
         default: 'knowledge',
       },
       { key: 'maxResults', label: 'Max Results', type: 'integer', default: '6' },
+      { key: 'includeTableSql', label: 'Include Table SQL', type: 'boolean', required: false },
+      { key: 'tableLimit', label: 'Table Row Limit (1–100)', type: 'integer', required: false },
     ],
     perform,
     sample: { id: '1', text: 'recalled context', score: 0.9, title: 'note' },

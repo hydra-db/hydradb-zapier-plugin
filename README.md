@@ -43,3 +43,15 @@ zapier push          # upload this version
 
 Add **Ingest Knowledge** as an action to store data, or **Recall Context** as a
 search step to pull relevant context into the rest of your Zap.
+
+### Query tables and response metadata
+
+The query action accepts optional `includeTableSql` and `tableLimit` (1–100);
+omit the limit to use the API default. Table SQL can include query literals, so
+only enable it when downstream workflow steps may receive that information.
+Query records retain their existing fields and include `chunk_metadata`,
+`tabular_data`, `temporal_facts`, `temporal_duration`, `temporal_filter`, and
+response `warnings` when present. These response-level fields are repeated on
+each chunk. If there are no chunks but any of these fields are present, a
+single record with an empty text value carries them instead. A completely empty
+response still produces no records.

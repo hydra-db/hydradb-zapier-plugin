@@ -32,7 +32,8 @@ const perform = async (z, bundle) => {
     if (data[key] != null) extras[key] = data[key];
   }
   if (response.data?.meta?.warnings?.length) extras.warnings = response.data.meta.warnings;
-  const rows = chunks.length ? chunks : (Object.keys(extras).length ? [{}] : []);
+  // A search result represents a chunk or a successful table answer, not diagnostics.
+  const rows = chunks.length ? chunks : (data.tabular_data?.status === 'ok' ? [{}] : []);
   return rows.map((c, i) => ({
     id: c.chunk_uuid || c.id || String(i),
     text: extractText(c.chunk_content || c.text || ''),

@@ -26,3 +26,16 @@ test('Zapier app definition passes platform schema validation', () => {
  const { compileApp, validateApp } = require('zapier-platform-core/src/tools/schema');
  assert.deepEqual(validateApp(compileApp(require('../index'))), []);
 });
+test('warnings and inapplicable or failed table diagnostics do not fabricate search matches', async () => {
+ const search = async data => query.operation.perform({request: async () => ({data: {data, meta}})}, {authData: {}, inputData: {query:'q'}});
+ for (const data of [{chunks: []}, {chunks: [], tabular_data: {status: 'not_applicable', reason: 'no table'}}, {chunks: [], tabular_data: {status: 'error', error: {message: 'failed'}}}]) {
+   assert.deepEqual(await search(data), []);
+ }
+});
+test('successful table answer remains a match even without rows or chunks', async () => {
+ const tabular_data = {status: 'ok', records: []};
+ const records = await query.operation.perform({request: async () => ({data: {data: {chunks: [], tabular_data}, meta}})}, {authData: {}, inputData: {query:'q'}});
+ assert.equal(records.length, 1);
+ assert.deepEqual(records[0].tabular_data, tabular_data);
+ assert.deepEqual(records[0].warnings, meta.warnings);
+});

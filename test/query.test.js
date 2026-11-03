@@ -10,3 +10,19 @@ test('query sends table options and exposes retrieval and warning metadata', asy
 });
 test('table-only result remains accessible', async () => { const records = await query.operation.perform({request: async () => ({data: {data: {...data, chunks: []}, meta}})}, {authData: {}, inputData: {query:'q'}}); assert.deepEqual(records[0].tabular_data, data.tabular_data); });
 test('empty response preserves empty output and omits optional request fields', async () => { let req; const records = await query.operation.perform({request: async r => {req = r; return {data: {data: {chunks: []}}};}}, {authData: {}, inputData: {query:'q'}}); assert.deepEqual(records, []); assert.equal('include_table_sql' in req.body, false); assert.equal('table_limit' in req.body, false); });
+test('declares discoverable output fields and representative sample', () => {
+ const { sample, outputFields } = query.operation;
+ const keys = ['id', 'text', 'score', 'title', 'chunk_metadata', 'tabular_data', 'temporal_facts', 'temporal_duration', 'temporal_filter', 'warnings'];
+ for (const key of keys) {
+   assert.ok(Object.hasOwn(sample, key), `sample missing ${key}`);
+   assert.ok(outputFields.some(field => field.key === key), `outputFields missing ${key}`);
+ }
+ assert.equal(sample.temporal_facts[0].observed_at, 1700000000);
+ assert.deepEqual(sample.warnings[0].collections, ['restricted']);
+ const warningFields = outputFields.find(field => field.key === 'warnings').children;
+ assert.ok(warningFields.some(field => field.key === 'collections'));
+});
+test('Zapier app definition passes platform schema validation', () => {
+ const { compileApp, validateApp } = require('zapier-platform-core/src/tools/schema');
+ assert.deepEqual(validateApp(compileApp(require('../index'))), []);
+});

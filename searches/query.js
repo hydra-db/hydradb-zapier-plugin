@@ -28,10 +28,9 @@ const perform = async (z, bundle) => {
   const data = response.data?.data || {};
   const chunks = data.chunks || [];
   const extras = {};
-  for (const key of ['tabular_data', 'temporal_facts', 'temporal_duration', 'temporal_filter']) {
+  for (const key of ['llm_prompt', 'tabular_data']) {
     if (data[key] != null) extras[key] = data[key];
   }
-  if (response.data?.meta?.warnings?.length) extras.warnings = response.data.meta.warnings;
   // A search result represents a chunk or a successful table answer, not diagnostics.
   const rows = chunks.length ? chunks : (data.tabular_data?.status === 'ok' ? [{}] : []);
   return rows.map((c, i) => ({
@@ -39,7 +38,8 @@ const perform = async (z, bundle) => {
     text: extractText(c.chunk_content || c.text || ''),
     score: c.relevancy_score ?? c.score ?? null,
     title: c.source_title || c.title || '',
-    ...(c.chunk_metadata != null && { chunk_metadata: c.chunk_metadata }),
+    ...(c.metadata != null && { metadata: c.metadata }),
+    ...(c.additional_metadata != null && { additional_metadata: c.additional_metadata }),
     ...extras,
   }));
 };
@@ -68,54 +68,25 @@ module.exports = {
     perform,
     sample: {
       id: '1', text: 'recalled context', score: 0.9, title: 'note',
-      chunk_metadata: { table_id: 'table-1', row_start: 1, row_end: 2, generation: 'v1' },
+      metadata: { source: 'note' },
+      additional_metadata: { category: 'example' },
+      llm_prompt: 'Use the recalled context.',
       tabular_data: { status: 'ok', answer_type: 'computed', records: [{ total: 42 }], returned_rows: 1, sql: 'SELECT count(*) FROM table_1' },
-      temporal_facts: [{ subject: 'Ada', relation: 'joined', object: 'Acme', observed_at: 1700000000, event_start: 1690000000 }],
-      temporal_duration: { days: 10, approximate: false, from: { observed_at: 1700000000 }, to: { observed_at: 1700864000 } },
-      temporal_filter: { applied: true, matched_facts: 1, degraded: false },
-      warnings: [{ code: 'collection_skipped', message: 'A collection was skipped', collections: ['restricted'] }],
     },
     outputFields: [
       { key: 'id', label: 'ID' },
       { key: 'text', label: 'Text' },
       { key: 'score', label: 'Score', type: 'number' },
       { key: 'title', label: 'Title' },
-      { key: 'chunk_metadata', label: 'Chunk Metadata', children: [
-        { key: 'table_id', label: 'Table ID' },
-        { key: 'row_start', label: 'First Row', type: 'integer' },
-        { key: 'row_end', label: 'Last Row', type: 'integer' },
-        { key: 'generation', label: 'Generation' },
-      ] },
+      { key: 'metadata', label: 'Metadata' },
+      { key: 'additional_metadata', label: 'Additional Metadata' },
+      { key: 'llm_prompt', label: 'LLM Prompt' },
       { key: 'tabular_data', label: 'Table Data', children: [
         { key: 'status', label: 'Status' },
         { key: 'answer_type', label: 'Answer Type' },
         { key: 'records', label: 'Records' },
         { key: 'returned_rows', label: 'Returned Rows', type: 'integer' },
         { key: 'sql', label: 'SQL' },
-      ] },
-      { key: 'temporal_facts', label: 'Temporal Facts', children: [
-        { key: 'subject', label: 'Subject' },
-        { key: 'relation', label: 'Relation' },
-        { key: 'object', label: 'Object' },
-        { key: 'observed_at', label: 'Observed At (Unix seconds)', type: 'integer' },
-        { key: 'event_start', label: 'Event Start (Unix seconds)', type: 'integer' },
-        { key: 'event_end', label: 'Event End (Unix seconds)', type: 'integer' },
-      ] },
-      { key: 'temporal_duration', label: 'Temporal Duration', children: [
-        { key: 'days', label: 'Days', type: 'integer' },
-        { key: 'approximate', label: 'Approximate', type: 'boolean' },
-        { key: 'from', label: 'From', children: [{ key: 'observed_at', label: 'Observed At (Unix seconds)', type: 'integer' }] },
-        { key: 'to', label: 'To', children: [{ key: 'observed_at', label: 'Observed At (Unix seconds)', type: 'integer' }] },
-      ] },
-      { key: 'temporal_filter', label: 'Temporal Filter', children: [
-        { key: 'applied', label: 'Applied', type: 'boolean' },
-        { key: 'matched_facts', label: 'Matched Facts', type: 'integer' },
-        { key: 'degraded', label: 'Degraded', type: 'boolean' },
-      ] },
-      { key: 'warnings', label: 'Warnings', children: [
-        { key: 'code', label: 'Code' },
-        { key: 'message', label: 'Message' },
-        { key: 'collections', label: 'Collections', list: true },
       ] },
     ],
   },

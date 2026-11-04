@@ -49,10 +49,8 @@ search step to pull relevant context into the rest of your Zap.
 The query action accepts optional `includeTableSql` and `tableLimit` (1–100);
 omit the limit to use the API default. Table SQL can include query literals, so
 only enable it when downstream workflow steps may receive that information.
-Query records retain their existing fields and include `chunk_metadata`,
-`tabular_data`, `temporal_facts`, `temporal_duration`, `temporal_filter`, and
-response `warnings` when present. These response-level fields are repeated on
-each chunk. If there are no chunks but the table answer has status `ok`, a
-single record with an empty text value carries the answer and any warnings.
-Warnings or unsuccessful/inapplicable table diagnostics alone do not constitute
-a search match, so no records (and no diagnostic metadata) are returned.
+Query records expose chunk `metadata` and `additional_metadata`. The response
+`llm_prompt` and optional `tabular_data` are repeated on each chunk. If there
+are no chunks but the table answer has status `ok`, a single record carries
+the answer and prompt. A prompt or an unsuccessful/inapplicable table result
+alone does not constitute a search match, so no records are returned.

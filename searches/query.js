@@ -17,7 +17,7 @@ const perform = async (z, bundle) => {
       database: bundle.authData.database,
       collection: bundle.authData.collection || '',
       query: bundle.inputData.query,
-      kind: bundle.inputData.kind || 'knowledge',
+      type: bundle.inputData.kind || 'knowledge',
       mode: 'fast',
       max_results: bundle.inputData.maxResults || 6,
       graph_context: true,

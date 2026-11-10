@@ -71,7 +71,7 @@ module.exports = {
       metadata: { source: 'note' },
       additional_metadata: { category: 'example' },
       llm_prompt: 'Use the recalled context.',
-      tabular_data: { status: 'ok', answer_type: 'computed', records: [{ total: 42 }], returned_rows: 1, sql: 'SELECT count(*) FROM table_1' },
+      tabular_data: { status: 'ok', answer_type: 'computed', records: [{ total: 42 }], sql: 'SELECT count(*) FROM table_1' },
     },
     outputFields: [
       { key: 'id', label: 'ID' },
@@ -85,7 +85,6 @@ module.exports = {
         { key: 'status', label: 'Status' },
         { key: 'answer_type', label: 'Answer Type' },
         { key: 'records', label: 'Records' },
-        { key: 'returned_rows', label: 'Returned Rows', type: 'integer' },
         { key: 'sql', label: 'SQL' },
       ] },
     ],

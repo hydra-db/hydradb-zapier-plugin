@@ -44,6 +44,7 @@ const beforeRequest = (request, z, bundle) => {
   if (bundle.authData.apiKey) {
     request.headers = request.headers || {};
     request.headers.Authorization = `Bearer ${bundle.authData.apiKey}`;
+    request.headers['API-Version'] = '2';
   }
   return request;
 };

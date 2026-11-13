@@ -34,7 +34,7 @@ const perform = async (z, bundle) => {
   const { boundary, body } = encodeMultipart({
     tenant_id: bundle.authData.database,
     sub_tenant_id: bundle.authData.collection || '',
-    kind: 'knowledge',
+    type: 'knowledge',
     app_knowledge: JSON.stringify([item]),
   });
   const response = await z.request({

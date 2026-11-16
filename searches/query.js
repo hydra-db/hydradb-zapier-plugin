@@ -21,14 +21,26 @@ const perform = async (z, bundle) => {
       mode: 'fast',
       max_results: bundle.inputData.maxResults || 6,
       graph_context: true,
+      ...(bundle.inputData.includeTableSql != null && { include_table_sql: bundle.inputData.includeTableSql }),
+      ...(bundle.inputData.tableLimit != null && bundle.inputData.tableLimit !== '' && { table_limit: bundle.inputData.tableLimit }),
     },
   });
-  const chunks = (response.data && response.data.data && response.data.data.chunks) || [];
-  return chunks.map((c, i) => ({
+  const data = response.data?.data || {};
+  const chunks = data.chunks || [];
+  const extras = {};
+  for (const key of ['llm_prompt', 'tabular_data']) {
+    if (data[key] != null) extras[key] = data[key];
+  }
+  // A search result represents a chunk or a successful table answer, not diagnostics.
+  const rows = chunks.length ? chunks : (data.tabular_data?.status === 'ok' ? [{}] : []);
+  return rows.map((c, i) => ({
     id: c.chunk_uuid || c.id || String(i),
     text: extractText(c.chunk_content || c.text || ''),
     score: c.relevancy_score ?? c.score ?? null,
     title: c.source_title || c.title || '',
+    ...(c.metadata != null && { metadata: c.metadata }),
+    ...(c.additional_metadata != null && { additional_metadata: c.additional_metadata }),
+    ...extras,
   }));
 };
 
@@ -50,8 +62,31 @@ module.exports = {
         default: 'knowledge',
       },
       { key: 'maxResults', label: 'Max Results', type: 'integer', default: '6' },
+      { key: 'includeTableSql', label: 'Include Table SQL', type: 'boolean', required: false },
+      { key: 'tableLimit', label: 'Table Row Limit (1–100)', type: 'integer', required: false },
     ],
     perform,
-    sample: { id: '1', text: 'recalled context', score: 0.9, title: 'note' },
+    sample: {
+      id: '1', text: 'recalled context', score: 0.9, title: 'note',
+      metadata: { source: 'note' },
+      additional_metadata: { category: 'example' },
+      llm_prompt: 'Use the recalled context.',
+      tabular_data: { status: 'ok', answer_type: 'computed', records: [{ total: 42 }], sql: 'SELECT count(*) FROM table_1' },
+    },
+    outputFields: [
+      { key: 'id', label: 'ID' },
+      { key: 'text', label: 'Text' },
+      { key: 'score', label: 'Score', type: 'number' },
+      { key: 'title', label: 'Title' },
+      { key: 'metadata', label: 'Metadata' },
+      { key: 'additional_metadata', label: 'Additional Metadata' },
+      { key: 'llm_prompt', label: 'LLM Prompt' },
+      { key: 'tabular_data', label: 'Table Data', children: [
+        { key: 'status', label: 'Status' },
+        { key: 'answer_type', label: 'Answer Type' },
+        { key: 'records', label: 'Records' },
+        { key: 'sql', label: 'SQL' },
+      ] },
+    ],
   },
 };

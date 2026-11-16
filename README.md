@@ -43,3 +43,14 @@ zapier push          # upload this version
 
 Add **Ingest Knowledge** as an action to store data, or **Recall Context** as a
 search step to pull relevant context into the rest of your Zap.
+
+### Query tables and response metadata
+
+The query action accepts optional `includeTableSql` and `tableLimit` (1–100);
+omit the limit to use the API default. Table SQL can include query literals, so
+only enable it when downstream workflow steps may receive that information.
+Query records expose chunk `metadata` and `additional_metadata`. The response
+`llm_prompt` and optional `tabular_data` are repeated on each chunk. If there
+are no chunks but the table answer has status `ok`, a single record carries
+the answer and prompt. A prompt or an unsuccessful/inapplicable table result
+alone does not constitute a search match, so no records are returned.

@@ -1,5 +1,7 @@
 'use strict';
 
+const { layout, unifiedBody } = require('../lib/contract');
+
 /**
  * Encode text fields as a multipart/form-data body with an explicit boundary.
  * @param fields - A map of field name to string value.
@@ -25,6 +27,16 @@ const encodeMultipart = (fields) => {
  */
 const perform = async (z, bundle) => {
   const base = bundle.authData.baseUrl || 'https://api.hydradb.com';
+  if (layout(bundle.inputData.layout) === 'unified') {
+    const response = await z.request({
+      url: `${base}/context/ingest`, method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: unifiedBody(bundle.authData.database, bundle.authData.collection || '', bundle.inputData.context, bundle.inputData.text, bundle.inputData.title, `zapier-${Date.now()}`),
+    });
+    return typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+  }
+  if (bundle.inputData.context !== undefined && bundle.inputData.context !== '') throw new Error('context requires unified layout');
+  if (typeof bundle.inputData.text !== 'string' || !bundle.inputData.text.trim()) throw new Error('text is required for split ingestion');
   const item = {
     id: `zapier-${Date.now()}`,
     title: bundle.inputData.title || 'note',
@@ -55,8 +67,10 @@ module.exports = {
   },
   operation: {
     inputFields: [
-      { key: 'text', label: 'Text', type: 'text', required: true },
+      { key: 'layout', label: 'Database Layout', choices: ['split', 'unified'], default: 'split', helpText: 'Explicit layout choice. Unified is not enabled in production.' },
+      { key: 'text', label: 'Text', type: 'text', required: false },
       { key: 'title', label: 'Title', type: 'string', required: false },
+      { key: 'context', label: 'Unified Context JSON', type: 'text', required: false, helpText: 'Unified only. Optional JSON context array; replaces Text and Title. Each item needs text XOR conversation.' },
     ],
     perform,
     sample: { success: true, data: { success: true } },

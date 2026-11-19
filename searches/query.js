@@ -1,6 +1,8 @@
 'use strict';
 
 const { extractText } = require('../lib/unwrap');
+const { isUnified, roots } = require('../lib/contract');
+const { recall, inputFields } = require('../lib/query');
 
 /**
  * Recall relevant context from HydraDB for a query.
@@ -9,21 +11,12 @@ const { extractText } = require('../lib/unwrap');
  * @returns An array of records, each with id, text, score, and title.
  */
 const perform = async (z, bundle) => {
-  const base = bundle.authData.baseUrl || 'https://api.hydradb.com';
-  const response = await z.request({
-    url: `${base}/query`,
-    method: 'POST',
-    body: {
-      database: bundle.authData.database,
-      collection: bundle.authData.collection || '',
-      query: bundle.inputData.query,
-      type: bundle.inputData.kind || 'knowledge',
-      mode: 'fast',
-      max_results: bundle.inputData.maxResults || 6,
-      graph_context: true,
-    },
-  });
-  const chunks = (response.data && response.data.data && response.data.data.chunks) || [];
+  const response = await recall(z, bundle);
+  const data = response?.data || {};
+  const chunks = data.chunks || [];
+  if (isUnified(data)) {
+    return chunks.map(c => ({ ...c, id: c.chunk_id, text: c.content, title: '', ...roots(data) }));
+  }
   return chunks.map((c, i) => ({
     id: c.chunk_uuid || c.id || String(i),
     text: extractText(c.chunk_content || c.text || ''),
@@ -40,18 +33,18 @@ module.exports = {
     description: 'Recall relevant context from HydraDB for a query.',
   },
   operation: {
-    inputFields: [
-      { key: 'query', label: 'Query', type: 'string', required: true },
-      {
-        key: 'kind',
-        label: 'Kind',
-        type: 'string',
-        choices: { knowledge: 'Knowledge', memory: 'Memory' },
-        default: 'knowledge',
-      },
-      { key: 'maxResults', label: 'Max Results', type: 'integer', default: '6' },
-    ],
+    inputFields,
     perform,
     sample: { id: '1', text: 'recalled context', score: 0.9, title: 'note' },
+    outputFields: [
+      { key: 'id', label: 'ID' }, { key: 'text', label: 'Text' },
+      { key: 'score', label: 'Score', type: 'number' }, { key: 'title', label: 'Title' },
+      { key: 'chunk_id', label: 'Chunk ID' }, { key: 'context_id', label: 'Context ID' },
+      { key: 'content', label: 'Content' }, { key: 'enrichment', label: 'Enrichment' },
+      { key: 'received_at', label: 'Received At' }, { key: 'temporal', label: 'Temporal Facts' },
+      { key: 'chunk_metadata', label: 'CSV Row Range' }, { key: 'graph', label: 'Graph Paths' },
+      { key: 'forceful_relations', label: 'Forceful Relations' }, { key: 'llm_prompt', label: 'LLM Prompt' },
+      { key: 'tabular_data', label: 'Table Data' },
+    ],
   },
 };

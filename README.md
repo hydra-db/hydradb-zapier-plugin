@@ -2,6 +2,9 @@
 
 # hydradb-zapier
 
+> Unified support is an unpublished rollout preview, not enabled in production.
+> Do not publish, import, or deploy it yet. See [rollout contract and offline tests](UNIFIED_ROLLOUT.md).
+
 A [Zapier](https://zapier.com) integration for [HydraDB](https://hydradb.com):
 save knowledge and recall context inside your Zaps.
 
